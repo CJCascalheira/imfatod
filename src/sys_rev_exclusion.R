@@ -72,17 +72,30 @@ pubmed_2 <- pubmed_1 %>%
   ) %>%
   filter(intervention != 1)
 
-# Removes articles mentioning women and children
+# Removes articles not mentioning:
 pubmed_3 <- pubmed_2 %>% 
   mutate(
-    population = if_else(str_detect(Title, regex("women|youth|adolesce", ignore_case = TRUE)), 1, 0)
-  ) %>%
-  filter(population != 1)
+    # MSM
+    population = if_else(str_detect(Title, regex("women|youth|adolesce|transgend", ignore_case = TRUE)), 1, 0),
+    # USA
+    locale = if_else(str_detect(Title, regex("Middle East|low income|brazil|latin america|pacific countr|china|united kingdom", ignore_case = TRUE)), 1, 0),
+    # Substance use primarily
+    std_etc = if_else(str_detect(Title, regex("HIV|hepatitis|cancer|HHV-8|tuberculo|cardiovascu|pregnancy|blood-borne", ignore_case = TRUE)), 1, 0)
+  ) 
+pubmed_3
 
-# Calculation
+# Calculation of exclusion reasons
 nrow(pubmed) - nrow(pubmed_1)
 nrow(pubmed_1) - nrow(pubmed_2)
-nrow(pubmed_2) - nrow(pubmed_3)
+pubmed_3 %>% filter(population == 1) %>% nrow()
+pubmed_3 %>% filter(population != 1, locale == 1) %>% nrow()
+pubmed_3 %>% filter(population != 1, locale != 1, std_etc == 1) %>% nrow()
 
 # Export to search titles manually
-write_csv(pubmed_3, file = "data/results/pubmed_cleaned.csv")
+pubmed_3 %>%
+  filter(
+    population != 1,
+    locale != 1,
+    std_etc != 1
+  ) %>% 
+  write_csv(file = "data/results/pubmed_cleaned.csv")
